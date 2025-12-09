@@ -1,0 +1,41 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  buildOutput: '$(Build.ArtifactStagingDirectory)/publish'
+
+steps:
+# 1. Checkout
+- checkout: self
+  clean: true
+
+# 2. Install .NET 8
+- task: UseDotNet@2
+  displayName: 'Install .NET 8 SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '8.0.x'
+
+# 3. Restore
+- script: dotnet restore
+  displayName: 'Restore packages'
+
+# 4. Build
+- script: dotnet build --configuration $(buildConfiguration) --no-restore
+  displayName: 'Build'
+
+# 5. Publish
+- script: dotnet publish --configuration $(buildConfiguration) --output $(buildOutput)
+  displayName: 'Publish'
+
+# 6. Deploy to Azure Web App
+- task: AzureWebApp@1
+  displayName: 'Deploy to Azure Web App'
+  inputs:
+    azureSubscription: 'AzureServiceConnection'     # ← 这里要和你刚才的 service connection 名一致
+    appName: 'azure-demo-api-cragaha1'              # ← 这里是 App Service 的 Name（不是整条域名）
+    package: '$(buildOutput)'
