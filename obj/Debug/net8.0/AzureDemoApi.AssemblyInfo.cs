@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AzureDemoApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0c3fd8dbc8ab15da8c7ce0a41b632ed98e3a1398")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d602514c0376c4d08453c2060329a88d5870808d")]
 [assembly: System.Reflection.AssemblyProductAttribute("AzureDemoApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AzureDemoApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
