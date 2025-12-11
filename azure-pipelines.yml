@@ -4,8 +4,8 @@ trigger:
 variables:
   buildConfiguration: 'Release'
   buildOutput: '$(Build.ArtifactStagingDirectory)/publish'
-  azureSubscription: 'AzureServiceConnection'   # ← 就用你现有的连接名
-  webAppName: 'azure-demo-api-cragaha1'        # ← 就用你之前那个 Web App 名
+  azureSubscription: 'AzureServiceConnection'   # ← 你的 service connection 名
+  webAppName: 'azure-demo-api-cragaha1'        # ← 你的 Web App 名
 
 stages:
 # =====================
@@ -39,7 +39,7 @@ stages:
     - script: dotnet build --configuration $(buildConfiguration) --no-restore
       displayName: 'Build'
 
-    # 5) （可选）Test —— 如果你没有 *Tests 项目，这步会直接跳过
+    # 5) （可选）Test —— 如果没有 *Tests 项目，这步会直接没东西测，但不会挂
     - script: dotnet test --configuration $(buildConfiguration)
       displayName: 'Test'
       continueOnError: true
@@ -57,7 +57,7 @@ stages:
         publishLocation: 'Container'
 
 # =====================
-# Stage 2: Deploy to Azure Web App
+# Stage 2: Deploy to Azure Web App (with Environment)
 # =====================
 - stage: Deploy_Dev
   displayName: 'Deploy to Azure Web App'
@@ -65,28 +65,32 @@ stages:
   condition: succeeded()      # 只有上一个 stage 成功才执行部署
 
   jobs:
-  - job: DeployJob
+  - deployment: DeployJob                         # ← deployment 类型的 job
     displayName: 'Deploy to azure-demo-api-cragaha1'
+    environment: 'dev'                            # ← 这里关联 Environment（可加审批）
     pool:
       vmImage: 'ubuntu-latest'
 
-    steps:
-    - checkout: none          # 部署只用构建产物，不需要重新拉代码
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: none          # 部署只用构建产物，不需要重新拉代码
 
-    # 1) 下载上一个 Stage 的 Artifact
-    - task: DownloadBuildArtifacts@1
-      displayName: 'Download Artifacts'
-      inputs:
-        buildType: 'current'
-        downloadType: 'single'
-        artifactName: 'drop'
-        downloadPath: '$(System.ArtifactsDirectory)'
+          # 1) 下载上一个 Stage 的 Artifact
+          - task: DownloadBuildArtifacts@1
+            displayName: 'Download Artifacts'
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'drop'
+              downloadPath: '$(System.ArtifactsDirectory)'
 
-    # 2) 部署到 Azure Web App（沿用你原来的 connection 和 appName）
-    - task: AzureWebApp@1
-      displayName: 'Deploy to Azure Web App'
-      inputs:
-        azureSubscription: '$(azureSubscription)'
-        appType: 'webAppLinux'         # AzureServiceConnection
-        appName: '$(webAppName)'                          # azure-demo-api-cragaha1
-        package: '$(System.ArtifactsDirectory)/drop/publish'
+          # 2) 部署到 Azure Web App（沿用你的 connection 和 appName）
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App'
+            inputs:
+              azureSubscription: '$(azureSubscription)'         # AzureServiceConnection
+              appName: '$(webAppName)'                          # azure-demo-api-cragaha1
+              appType: 'webAppLinux'
+              package: '$(System.ArtifactsDirectory)/drop/publish'
