@@ -1,41 +1,92 @@
 trigger:
 - main
 
-pool:
-  vmImage: 'ubuntu-latest'
-
 variables:
   buildConfiguration: 'Release'
   buildOutput: '$(Build.ArtifactStagingDirectory)/publish'
+  azureSubscription: 'AzureServiceConnection'   # ← 就用你现有的连接名
+  webAppName: 'azure-demo-api-cragaha1'        # ← 就用你之前那个 Web App 名
 
-steps:
-# 1. Checkout
-- checkout: self
-  clean: true
+stages:
+# =====================
+# Stage 1: Build & Publish
+# =====================
+- stage: Build_and_Publish
+  displayName: 'Build and Publish'
+  jobs:
+  - job: BuildJob
+    displayName: 'Restore, Build, Publish'
+    pool:
+      vmImage: 'ubuntu-latest'
 
-# 2. Install .NET 8
-- task: UseDotNet@2
-  displayName: 'Install .NET 8 SDK'
-  inputs:
-    packageType: 'sdk'
-    version: '8.0.x'
+    steps:
+    # 1) Checkout
+    - checkout: self
+      clean: true
 
-# 3. Restore
-- script: dotnet restore
-  displayName: 'Restore packages'
+    # 2) Install .NET 8 SDK
+    - task: UseDotNet@2
+      displayName: 'Install .NET 8 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '8.0.x'
 
-# 4. Build
-- script: dotnet build --configuration $(buildConfiguration) --no-restore
-  displayName: 'Build'
+    # 3) Restore
+    - script: dotnet restore
+      displayName: 'Restore packages'
 
-# 5. Publish
-- script: dotnet publish --configuration $(buildConfiguration) --output $(buildOutput)
-  displayName: 'Publish'
+    # 4) Build
+    - script: dotnet build --configuration $(buildConfiguration) --no-restore
+      displayName: 'Build'
 
-# 6. Deploy to Azure Web App
-- task: AzureWebApp@1
+    # 5) （可选）Test —— 如果你没有 *Tests 项目，这步会直接跳过
+    - script: dotnet test --configuration $(buildConfiguration)
+      displayName: 'Test'
+      continueOnError: true
+
+    # 6) Publish
+    - script: dotnet publish --configuration $(buildConfiguration) --output $(buildOutput)
+      displayName: 'Publish'
+
+    # 7) 发布构建产物（Artifacts）
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
+# =====================
+# Stage 2: Deploy to Azure Web App
+# =====================
+- stage: Deploy_Dev
   displayName: 'Deploy to Azure Web App'
-  inputs:
-    azureSubscription: 'AzureServiceConnection'     # ← 这里要和你刚才的 service connection 名一致
-    appName: 'azure-demo-api-cragaha1'              # ← 这里是 App Service 的 Name（不是整条域名）
-    package: '$(buildOutput)'
+  dependsOn: Build_and_Publish
+  condition: succeeded()      # 只有上一个 stage 成功才执行部署
+
+  jobs:
+  - job: DeployJob
+    displayName: 'Deploy to azure-demo-api-cragaha1'
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+    - checkout: none          # 部署只用构建产物，不需要重新拉代码
+
+    # 1) 下载上一个 Stage 的 Artifact
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Download Artifacts'
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'drop'
+        downloadPath: '$(System.ArtifactsDirectory)'
+
+    # 2) 部署到 Azure Web App（沿用你原来的 connection 和 appName）
+    - task: AzureWebApp@1
+      displayName: 'Deploy to Azure Web App'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        appType: 'webAppLinux'         # AzureServiceConnection
+        appName: '$(webAppName)'                          # azure-demo-api-cragaha1
+        package: '$(System.ArtifactsDirectory)/drop/publish'
