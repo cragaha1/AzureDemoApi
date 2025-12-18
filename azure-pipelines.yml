@@ -40,7 +40,7 @@ stages:
       displayName: 'Build'
 
     # 5) （可选）Test —— 如果没有 *Tests 项目，这步会直接没东西测，但不会挂
-    - script: dotnet test --configuration $(buildConfiguration) --logger "trx" --collect "XPlat Code Coverage"
+    - script: dotnet test ./AzureDemoApi.Tests/AzureDemoApi.Tests.csproj -c $(buildConfiguration) --logger trx
       displayName: 'Test'
       continueOnError: true
     # 5.1) 发布测试结果到 Azure DevOps
@@ -63,8 +63,8 @@ stages:
         reportDirectory: '$(System.DefaultWorkingDirectory)'
         failIfCoverageEmpty: false
     # 6) Publish
-    - script: dotnet publish --configuration $(buildConfiguration) --output $(buildOutput)
-      displayName: 'Publish'
+    - script: dotnet publish ./AzureDemoApi.csproj -c $(buildConfiguration) -o $(buildOutput)
+      displayName: 'Publish (Web API only)'
 
     # 7) 发布构建产物（Artifacts）
     - task: PublishBuildArtifacts@1
