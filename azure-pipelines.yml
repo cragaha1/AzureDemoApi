@@ -113,3 +113,9 @@ stages:
               appType: 'webAppLinux'
               slotName: 'staging'
               package: '$(System.ArtifactsDirectory)/drop/publish'
+                        # ⭐ Step A5：冒烟测试（紧跟在 deploy 后）
+          - script: |
+              set -e
+              echo "Running smoke test on STAGING..."
+              curl -f https://azure-demo-api-cragaha1-staging-a8c2c0hjajd0htda.canadacentral-01.azurewebsites.net/health
+            displayName: 'Smoke test /health on STAGING'
