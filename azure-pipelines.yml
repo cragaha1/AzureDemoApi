@@ -106,9 +106,10 @@ stages:
 
           # 2) 部署到 Azure Web App（沿用你的 connection 和 appName）
           - task: AzureWebApp@1
-            displayName: 'Deploy to Azure Web App'
+            displayName: 'Deploy to STAGING slot'
             inputs:
               azureSubscription: '$(azureSubscription)'         # AzureServiceConnection
               appName: '$(webAppName)'                          # azure-demo-api-cragaha1
               appType: 'webAppLinux'
+              slotName: 'staging'
               package: '$(System.ArtifactsDirectory)/drop/publish'
