@@ -113,9 +113,17 @@ stages:
               appType: 'webAppLinux'
               slotName: 'staging'
               package: '$(System.ArtifactsDirectory)/drop/publish'
-                        # ⭐ Step A5：冒烟测试（紧跟在 deploy 后）
+          # ⭐ Step A5：冒烟测试（紧跟在 deploy 后）
           - script: |
               set -e
               echo "Running smoke test on STAGING..."
               curl -f https://azure-demo-api-cragaha1-staging-a8c2c0hjajd0htda.canadacentral-01.azurewebsites.net/health
             displayName: 'Smoke test /health on STAGING'
+          # 3) ⭐ Swap (新加：紧跟在 smoke test 后)
+          - task: AzureAppServiceManage@0
+            displayName: 'Swap STAGING to PRODUCTION'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              Action: 'Swap Slots'
+              WebAppName: '$(webAppName)'
+              SourceSlot: 'staging'
