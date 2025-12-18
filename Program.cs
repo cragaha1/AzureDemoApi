@@ -36,6 +36,11 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast")
 .WithOpenApi();
 app.MapGet("/hello", () => "Hello from Azure CI/CD");
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "ok",
+    utc = DateTime.UtcNow
+}));
 app.Run();
 public partial class Program { }
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
