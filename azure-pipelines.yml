@@ -126,4 +126,5 @@ stages:
               azureSubscription: '$(azureSubscription)'
               Action: 'Swap Slots'
               WebAppName: '$(webAppName)'
+              ResourceGroupName: 'AzureDemoRG'
               SourceSlot: 'staging'
